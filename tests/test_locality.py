@@ -43,3 +43,18 @@ def test_from_h_and_seeded_zero_term_case():
     a=m.generate_random_QAOA_operator(3,2,2,seed=12)
     np.testing.assert_array_equal(a,m.generate_random_QAOA_operator(3,2,2,seed=12))
     np.testing.assert_array_equal(m.generate_random_QAOA_operator(2,2,0,seed=12),np.zeros((4,4)))
+
+
+def test_weighted_graph_and_diagonal_option():
+    import networkx as nx
+    graph = nx.Graph()
+    graph.add_weighted_edges_from([('a','b',.7),('b','c',-.3)])
+    diagonal = m.make_H_maxCUT(graph, full_matrix=False)
+    expected = .7*m.get_circuit_operators([0]*3,[1,1,0])-.3*m.get_circuit_operators([0]*3,[0,1,1])
+    np.testing.assert_array_equal(m.make_H_maxCUT(graph), expected)
+    np.testing.assert_array_equal(diagonal, np.diag(expected))
+
+
+def test_grid_seed_reproduces_hamiltonians_and_angles():
+    a = m.make_grid(3,2,3,2,seed=174)
+    np.testing.assert_array_equal(a,m.make_grid(3,2,3,2,seed=174))

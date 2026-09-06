@@ -17,3 +17,15 @@ The locality module retains its historical angle names: beta_angle is COST and g
 Notebook copies of the counter now call the tested module; dependent outputs were cleared. The old elementwise-exponential helper in QAOA_locality(ver1).ipynb also delegates to the corrected implementation. Saved optimization successes give upper bounds on attainable depth for those instances, not minimum-depth theorems; unsuccessful finite optimization runs provide no lower bound. These notebooks remain exploratory outside the regression-tested paths.
 
 pauli_evolution.py and coefficient_evolution.ipynb provide a small exact coefficient-aware reference. They merge equal Pauli labels, retain signs and complex phases, traverse circuit layers in reverse, and select I/X strings only at the terminal plus-state contraction. No approximation or efficient-scaling claim is made. Near-zero floating coefficients are not symbolic identities. string_evolve.ipynb remains available as a clearly labeled historical reachability visualization; its counts are not exact Pauli-support or energy results.
+
+
+## Further optimizer and input corrections
+
+Layerwise optimization now selects each optimized restart's angles, including at depth one, and counts all restart, appended-layer, and joint-refinement energy calls. It accepts a deterministic seed and returns an OptimizeResult with the actual stopping depth. `lw_log=None` means the numerical ground-energy tolerance was never reached. If early stopping selects fewer than the requested layers, `result.x` contains the shorter circuit while `opt_angles` pads it with identity layers to remain a valid requested-depth warm start. A first-hit depth is an upper bound from finite optimization, not a minimum-depth proof.
+
+CMA-ES now saves its best evaluated sample where exposed, accepts an explicit seed, and restores cost tracking if its backend raises. The MCTS method in QAOA_class likewise saves its best evaluated complete circuit and tracks the actual evaluation history. Previously these methods could report a last sample or an unrelated random completion. Old optimization results from these paths require regeneration before research use.
+
+Hamiltonian input must be a finite real diagonal vector of power-of-two length, with positive integer depth. A valid all-zero angle warm start is preserved. `H_zz_Ising` uses the indexed periodic bond sum: one closed site gives the constant identity term, two closed sites count the bond twice, and one open site has no bonds. This convention is explicit so small-chain comparisons do not silently disagree.
+
+
+The weighted graph constructor now preserves NetworkX edge weights and node insertion order. `make_H_maxCUT(G)` retains its historical dense-matrix default; `full_matrix=False` returns the diagonal. Node/qubit zero remains the rightmost Qiskit tensor factor. `make_grid(..., seed=...)` now seeds angles and sampled Hamiltonians throughout the grid.

@@ -198,7 +198,7 @@ def count_solutions_XI(Operator, tol=1e-10):
     len_ans = len(ans)
     return ans, max_locality, avg_locality / len_ans if len_ans else 0.0, len_ans
 
-def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, gamma_angle=None):
+def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, gamma_angle=None, *, seed=None):
     """
     Generate a grid of locality vs. number of terms for QAOA operators.
 
@@ -213,6 +213,7 @@ def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, 
     Returns:
         np.ndarray: Locality vs. number of terms grid.
     """
+    rng = np.random.default_rng(seed)
     grid = np.zeros((max_loc, max_terms, 3))
     for i in range(1, max_loc + 1):
         for j in range(1, max_terms + 1):
@@ -220,7 +221,7 @@ def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, 
                 continue
             ans = generate_random_QAOA_operator(nqubits=nqubits, locality=i, number_of_terms=j,
                                                 number_of_layers=number_of_layers, beta_angle=beta_angle,
-                                                gamma_angle=gamma_angle)
+                                                gamma_angle=gamma_angle, seed=rng)
             ans, max_loc, avg_loc, len_ans = count_solutions_XI(ans, 1e-10)
             grid[i - 1][j - 1][0] = max_loc
             grid[i - 1][j - 1][1] = avg_loc
@@ -268,39 +269,28 @@ def plot_grid(grid, layer=-1, mode=2):
     fig.tight_layout()
     plt.show()
 
-def make_H_maxCUT(G, full_matrix=False):
+def make_H_maxCUT(G, full_matrix=True):
+    """Return sum w_ij Zi Zj (minimization convention).
+
+    The historical default remains a dense matrix; full_matrix=False returns
+    its diagonal. NetworkX node insertion order defines qubit indices, with
+    qubit zero rightmost as in the other Qiskit locality helpers.
     """
-    Create the Hamiltonian for the max-cut problem.
-
-    Args:
-        G (nx.Graph or np.ndarray): Input graph or adjacency matrix.
-        full_matrix (bool, optional): Whether to return a full matrix. Defaults to False.
-
-    Returns:
-        np.ndarray: Hamiltonian matrix.
-    """
-    if type(G) == nx.classes.graph.Graph:
-        n = len(G.nodes())
-        adj_mat = np.zeros([n, n])
-        for i in range(n):
-            for j in range(n):
-                temp = G.get_edge_data(i, j, default=0)
-                if temp != 0:
-                    adj_mat[i, j] = 1
-    else:
-        adj_mat = G
-    n = (len(adj_mat))
-
-    H = np.zeros((2 ** n, 2 ** n), dtype=complex)
-    zeros = np.zeros(n)
-
+    a = nx.to_numpy_array(G, nodelist=list(G.nodes()), weight='weight') if isinstance(G, nx.Graph) else np.asarray(G)
+    if (a.ndim != 2 or a.shape[0] != a.shape[1] or len(a) == 0
+            or not np.isrealobj(a) or not np.isfinite(a).all()
+            or not np.array_equal(a, a.T) or np.any(np.diag(a))):
+        raise ValueError('Expected a finite real symmetric adjacency with no self loops.')
+    n = len(a)
+    indices = np.arange(2**n)
+    diagonal = np.zeros(2**n)
     for i in range(n):
-        for j in range(i + 1, n):
-            if adj_mat[i][j] != 0:
-                buf = np.zeros(n)
-                buf[i] = buf[j] = 1
-                H += adj_mat[i][j] * get_circuit_operators(zeros, buf)
-    return H
+        for j in range(i+1, n):
+            if a[i, j]:
+                parity = ((indices >> i) ^ (indices >> j)) & 1
+                diagonal += a[i, j]*(1-2*parity)
+    return np.diag(diagonal) if full_matrix else diagonal
+
 
 PAULIS = {'I': np.eye(2),
           'X': np.array([[0, 1], [1, 0]]),
