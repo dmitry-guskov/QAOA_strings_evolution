@@ -1,1 +1,5 @@
 /.vs
+# Local Python validation artifacts
+__pycache__/
+.pytest_cache/
+.venv/

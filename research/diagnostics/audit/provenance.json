@@ -1,0 +1,15 @@
+{
+  "original_package_file_sha256": {
+    "pilot_inputs.json": "442a414c50bcb1780914819b2f03dcaf3c2c04aa52d197bae00b51751825a24a",
+    "sha256.json": "7e6162f848de5d25423eabe0b6332ffd5634f6985a38d9c28a68dcbb99aa5cfa",
+    "results.json": "8ba61c421c6b0c0bbb08e26c33af94dd46c34ebba3541f61596f6a5a0ed8563f",
+    "group_diagnostic.json": "fc8c623d73ff3e5ad61066abd7a527425e0ecf3271f1a9cde78c3b101d777e96",
+    "audited_certified_evolution_v1.py": "4f4c4a82778583f7d9e0f4dfffd1141d6f116d2f512047c3e801a6c474ffb0b6",
+    "AUDIT.md": "f3a519cfbba616ef0fb6f45230570baa72212a91e3597e1c78a67906fe4cab69",
+    "group_diagnostic.py": "1e559d49a1c66814972fd296b46fddeecc6cf99426ee8f0fb142c49c9075d189",
+    "probe.py": "a50d324ca4e03fa64ccc7edb61c8a946c76fcc01228d3d62d74b0e216d13c824",
+    "scalar_diagnostic.json": "4056d4da3f3d7417cd61cc15b3bf435df2d0442346455fef69654c1141f62c09",
+    "scalar_diagnostic.py": "09fd9cb7ec013cd2f478aff2831a214ece38d930f73cd03d48dcfb905aa3df32"
+  },
+  "integration": "Script paths made relative to their own files; original numeric results preserved until explicit rerun. Archived v1 is reproduction evidence, not the supported public API."
+}

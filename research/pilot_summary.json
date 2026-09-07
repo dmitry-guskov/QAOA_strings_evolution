@@ -1,0 +1,115 @@
+{
+  "input_sha256": {
+    "certificate_pilot_v1.json": "a46713a4d5ef6b1ce313092c0d56d04cf6929d4c660c2f836c285ae329e6bf40",
+    "certificate_high_weight_v2.json": "a4bc87fee8bebd685eaa32ffdcc2f9f10419c438b42912f50840263a210a303d"
+  },
+  "threshold_status": "Illustrative retrospective thresholds, not preregistered success criteria.",
+  "energy_convention": "H/|E| for unweighted H=sum ZZ; normalized MaxCut fraction error is half this energy error.",
+  "timing_scope": "Certificate includes interval jets and bounds; exact reference also constructs QFI. These are implementation timings, not matched optimal algorithms.",
+  "summary": [
+    {
+      "dataset": "certificate_pilot_v1.json",
+      "profile": "optimized",
+      "radius": 0.0,
+      "cases": 54,
+      "complete": 54,
+      "energy_bound_at_most_0.01": 1,
+      "gradient_max_bound_at_most_0.05": 1,
+      "median_actual_center_energy_error": 0.16997952170648617,
+      "median_energy_bound": 1.701739667142982,
+      "median_certificate_seconds": 0.11338316695764661,
+      "median_exact_seconds": 0.0009129998506978154
+    },
+    {
+      "dataset": "certificate_pilot_v1.json",
+      "profile": "optimized",
+      "radius": 0.01,
+      "cases": 54,
+      "complete": 54,
+      "energy_bound_at_most_0.01": 1,
+      "gradient_max_bound_at_most_0.05": 1,
+      "median_actual_center_energy_error": 0.16997952170648617,
+      "median_energy_bound": 2.2967863277407212,
+      "median_certificate_seconds": 0.10314627143088728,
+      "median_exact_seconds": 0.0009129998506978154
+    },
+    {
+      "dataset": "certificate_pilot_v1.json",
+      "profile": "random",
+      "radius": 0.0,
+      "cases": 54,
+      "complete": 54,
+      "energy_bound_at_most_0.01": 5,
+      "gradient_max_bound_at_most_0.05": 2,
+      "median_actual_center_energy_error": 0.02194463536008469,
+      "median_energy_bound": 0.987263570646868,
+      "median_certificate_seconds": 0.11389558343216777,
+      "median_exact_seconds": 0.0009624370140954852
+    },
+    {
+      "dataset": "certificate_pilot_v1.json",
+      "profile": "random",
+      "radius": 0.01,
+      "cases": 54,
+      "complete": 54,
+      "energy_bound_at_most_0.01": 3,
+      "gradient_max_bound_at_most_0.05": 1,
+      "median_actual_center_energy_error": 0.02194463536008469,
+      "median_energy_bound": 1.5406683100222387,
+      "median_certificate_seconds": 0.12646477052476257,
+      "median_exact_seconds": 0.0009624370140954852
+    },
+    {
+      "dataset": "certificate_pilot_v1.json",
+      "profile": "small",
+      "radius": 0.0,
+      "cases": 54,
+      "complete": 54,
+      "energy_bound_at_most_0.01": 44,
+      "gradient_max_bound_at_most_0.05": 29,
+      "median_actual_center_energy_error": 2.2086378816121854e-08,
+      "median_energy_bound": 0.00026553003785648145,
+      "median_certificate_seconds": 0.1008488544030115,
+      "median_exact_seconds": 0.0009243539534509182
+    },
+    {
+      "dataset": "certificate_pilot_v1.json",
+      "profile": "small",
+      "radius": 0.01,
+      "cases": 54,
+      "complete": 54,
+      "energy_bound_at_most_0.01": 34,
+      "gradient_max_bound_at_most_0.05": 21,
+      "median_actual_center_energy_error": 2.2086378816121854e-08,
+      "median_energy_bound": 0.0016836931691409595,
+      "median_certificate_seconds": 0.10757147951517254,
+      "median_exact_seconds": 0.0009243539534509182
+    },
+    {
+      "dataset": "certificate_high_weight_v2.json",
+      "profile": "optimized",
+      "radius": 0.0,
+      "cases": 24,
+      "complete": 24,
+      "energy_bound_at_most_0.01": 10,
+      "gradient_max_bound_at_most_0.05": 9,
+      "median_actual_center_energy_error": 0.0019945840241377133,
+      "median_energy_bound": 0.08566700195521085,
+      "median_certificate_seconds": 1.0888351670000702,
+      "median_exact_seconds": 0.001247999956831336
+    },
+    {
+      "dataset": "certificate_high_weight_v2.json",
+      "profile": "optimized",
+      "radius": 0.01,
+      "cases": 24,
+      "complete": 24,
+      "energy_bound_at_most_0.01": 10,
+      "gradient_max_bound_at_most_0.05": 8,
+      "median_actual_center_energy_error": 0.0019945840241377133,
+      "median_energy_bound": 0.10070407600263206,
+      "median_certificate_seconds": 0.928241687361151,
+      "median_exact_seconds": 0.001247999956831336
+    }
+  ]
+}

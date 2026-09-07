@@ -13,46 +13,12 @@ Credits:
 
 
 import numpy as np
+from scipy.optimize import minimize
 import random
 import time
 from functools import reduce
 from typing import List
 from numpy import ndarray
-
-# # # from scipy.optimize import differential_evolution
-from scipy.optimize import minimize
-
-
-def w_operator (x, z) :
-    ''' generates the Walsh operator
-
-    Args:
-        x (_type_): _description_
-        z (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    '''
-    PAULIS = {'I': np.eye(2),
-          'X': np.array([[0, 1], [1, 0]]),
-          'Y': np.array([[0, -1j], [1j, 0]]),
-          'Z': np.diag([1, -1]),
-          'H': (1/np.sqrt(2))*np.array([[1, 1], [1, -1]]),
-          'XZ': np.array([[0,-1],[1,0]])}
-    
-    ans_string = []
-    for i in range(len(x)):
-        if x[i] and z[i]:
-            ans_string.append('XZ')
-        elif x[i] and not z[i]:
-            ans_string.append('X')
-        elif not x[i] and  z[i]:
-            ans_string.append('Z')
-        elif not x[i] and not z[i]:
-            ans_string.append('I')
-    ans = reduce(np.kron, [PAULIS[s] for s in ans_string])
-    coef = (1j)**np.sum(np.multiply(x,z))
-    return ans * coef
 
 
 def Graph_to_Hamiltonian(G):
@@ -313,7 +279,7 @@ class QAOA:
 
     def apply_Hx(self, statevector: ndarray) -> ndarray:
         """Applies the Hx operator to the state vector.
-            used in qaoa_qfi_matrix
+
         Args:
             statevector (ndarray): _description_
 
@@ -331,7 +297,7 @@ class QAOA:
 
     def apply_beta(self, beta: float, statevector: ndarray) -> ndarray:
         """Applies the beta operator to the state vector.
-            stands for mixer
+
         Args:
             beta (float): _description_
             statevector (ndarray): _description_
@@ -406,46 +372,7 @@ class QAOA:
             self.tracked_cost.append(ex)
         
         return ex
-
-    def qaoa_operator(self,angles: List[float]):
-        '''Generates QAOA operator, e.i. U(theta), so (plus_state(n_qubits)@op)@np.diag(hamiltonian)@(plus_state(n_qubits)@op).T.conj() equivalent to call expectation 
-
-        Args:
-            angles (List[float]): _description_
-
-        Raises:
-            ValueError: _description_
-
-        Returns:
-            _type_: _description_
-        '''
-        if len(angles) % 2 != 0:
-            raise ValueError("Number of angles must be even.")
-        state = np.zeros(2**self.n_qubits)
-        state[0] = 1
-        ans =  np.outer(state,self.apply_ansatz(angles, state))
-        state[0] = 0
-
-        for i in range(1,len(state)):
-            state[i] = 1
-            ans += np.outer(state,self.apply_ansatz(angles, state))
-            state[i] = 0
-
-        return ans
     
-    def construct_QAOA_operator_term(self, angles: List[float], part_hamiltonian=None):
-        """Return U^dagger diag(part_hamiltonian) U in the Heisenberg picture.
-
-        qaoa_operator retains its historical row-vector convention and returns
-        U.T. A zero observable is valid and must not be replaced by self.H.
-        """
-        if len(angles) % 2:
-            raise ValueError("Number of angles must be even.")
-        diagonal = self.H if part_hamiltonian is None else np.asarray(part_hamiltonian)
-        if diagonal.shape != self.H.shape:
-            raise ValueError("Expected one observable diagonal entry per basis state.")
-        row_operator = self.qaoa_operator(angles)
-        return row_operator.conj() @ np.diag(diagonal) @ row_operator.T
 
     def apply_ansatz_noise(self, angles, noise_prob, kraus_ops, rng=None):
         """Sample one normalized trajectory, with local noise after each layer.
@@ -538,7 +465,7 @@ class QAOA:
 
 
 
-    def run(self, track_energy=False, initial_params=None,bds=[]):
+    def run(self, track_energy=False, initial_params=None):
         """Runs the QAOA using the heuristic L-BFGS-B optimization method
             
         Returns:
@@ -551,8 +478,7 @@ class QAOA:
                 initial_angles = self.opt_angles
         else: 
             initial_angles = initial_params
-        if len(bds)==0:
-            bds = [(0.0, 2 * np.pi)] * self.p + [(0.0, 2 * np.pi)] * self.p
+
         bds = [(0.0, 2 * np.pi)] * self.p + [(0.0, 2 * np.pi)] * self.p
 
         if track_energy:
@@ -844,154 +770,118 @@ class QAOA:
             
 
 
-#     def run_PROTES(self, size=100, m=int(2.E+3), k=100, k_top=10, track_energy=False):
-#         """Runs the QAOA using the PROTES optimization method
+    def run_PROTES(self, a=0, b=2*np.pi, size=100, m=int(2.E+3), k=100, k_top=10, track_energy=False):
+        """Runs the QAOA using the PROTES optimization method
             
-#         Returns:
-#             _type_: _description_
-#         """           
+        Returns:
+            _type_: _description_
+        """           
+        from protes import protes_general
 
-#         # a = 0        # Grid lower bound
-#         # b = 2 * np.pi        # Grid upper bound
-#         bds = [(0.0, 2 * np.pi)] * self.p + [(0.0, 2 * np.pi)] * self.p
-#         a = np.array([val[0] for val in bds])
-#         b = np.array([val[1] for val in bds])
-#         mode_size = [size]*2*self.p # number of points in grid
-#         # m = int(2.E+3)   # Number of requests to the objective function
+        # a = 0        # Grid lower bound
+        # b = 2 * np.pi        # Grid upper bound
+        mode_size = [size]*2*self.p # number of points in grid
+        # m = int(2.E+3)   # Number of requests to the objective function
 
-#         def func(I):
-#             """Target function: y=f(I); [samples,d] -> [samples]."""
-#             return  np.array([self.expectation(a + I[i,:]/np.array(mode_size)*(b-a)) for i in range(I.shape[0])])     
+        def func(I):
+            """Target function: y=f(I); [samples,d] -> [samples]."""
+            return  np.array([self.expectation(a + I[i,:]/np.array(mode_size)*(b-a)) for i in range(I.shape[0])])     
 
-#         if track_energy:
-#             self.track_cost = True
-#         protes_log = {}
+        if track_energy:
+            self.track_cost = True
+        protes_log = {}
 
-#         t_start = time.time()
+        t_start = time.time()
         
-#         i_opt, y_opt  = protes_general(func, mode_size, m, k, k_top, info=protes_log,  with_info_i_opt_list=True)
+        i_opt, y_opt  = protes_general(func, mode_size, m, k, k_top, info=protes_log,  with_info_i_opt_list=True)
 
-#         t_end = time.time()
+        t_end = time.time()
 
-#         x = a + i_opt/np.array(mode_size) * (b-a)
-
-
-#         self.protes_log = protes_log
-#         self.opt_angles = x
-#         self.exe_time = float(t_end - t_start)
-#         self.opt_iter = protes_log['m']
-#         self.q_energy = y_opt
-#         self.q_error = self.q_energy - self.min
-#         self.f_state = self.qaoa_ansatz(self.opt_angles)
-#         self.olap = self.overlap(self.f_state)
-
-#         self.log = (f' Depth: {self.p} \n Error: {self.q_error} \n QAOA_Eg: {self.q_energy} \n'
-#                     f' Exact_Eg: {self.min} \n Overlap: {self.olap} \n Exe_time: {self.exe_time} \n'
-#                     f' Iternations: {self.opt_iter}')
-#         if track_energy:
-#             self.track_cost = False
+        x = a + i_opt/np.array(mode_size) * (b-a)
 
 
-#     def run_cmaes(self, generations=100, track_energy=False, initial_params=None, sigma=1.,n_max_resampling=100, lr_adapt=True, population_size=None):
-#         """Runs the QAOA using the cmaes optimization method
+        self.protes_log = protes_log
+        self.opt_angles = x
+        self.exe_time = float(t_end - t_start)
+        self.opt_iter = protes_log['m']
+        self.q_energy = y_opt
+        self.q_error = self.q_energy - self.min
+        self.f_state = self.qaoa_ansatz(self.opt_angles)
+        self.olap = self.overlap(self.f_state)
+
+        self.log = (f' Depth: {self.p} \n Error: {self.q_error} \n QAOA_Eg: {self.q_energy} \n'
+                    f' Exact_Eg: {self.min} \n Overlap: {self.olap} \n Exe_time: {self.exe_time} \n'
+                    f' Iternations: {self.opt_iter}')
+        if track_energy:
+            self.track_cost = False
+
+
+    def run_cmaes(self, generations=100, track_energy=False, initial_params=None, sigma=1.,n_max_resampling=100, lr_adapt=True, population_size=None):
+        """Runs the QAOA using the cmaes optimization method
             
-#         Returns:
-#             _type_: _description_
-#         """      
-#         # mean: ndarray,
-#         # sigma: float,
-#         # bounds: ndarray | None = None,
-#         # n_max_resampling: int = 100,
-#         # seed: int | None = None,
-#         # population_size: int | None = None,
-#         # cov: ndarray | None = None,
-#         # lr_adapt: bool = False
-#         if initial_params is None:
-#             if self.opt_angles is None or not self.opt_angles.any(): 
-#                 initial_angles = np.random.uniform(0, np.pi, 2*self.p)
-#             else: 
-#                 initial_angles = self.opt_angles
-#         else: 
-#             initial_angles = initial_params
-#         bds = [(0.0, 2 * np.pi)] * self.p + [(0.0, 2 * np.pi)] * self.p
-#         bds_f = lambda x: np.array([[bds[i][0],bds[i][1]] for i in range(x)] + [[bds[i+x][0],bds[i+x][1]] for i in range(x)])
+        Returns:
+            _type_: _description_
+        """      
+        if not isinstance(generations, (int, np.integer)) or generations < 1:
+            raise ValueError("generations must be a positive integer.")
+        from cmaes import CMA
+        # mean: ndarray,
+        # sigma: float,
+        # bounds: ndarray | None = None,
+        # n_max_resampling: int = 100,
+        # seed: int | None = None,
+        # population_size: int | None = None,
+        # cov: ndarray | None = None,
+        # lr_adapt: bool = False
+        if initial_params is None:
+            if self.opt_angles is None:
+                initial_angles = np.random.uniform(0, np.pi, 2*self.p)
+            else: 
+                initial_angles = self.opt_angles
+        else: 
+            initial_angles = initial_params
+        bds = lambda x: np.array([[0., 2 * np.pi]] * x + [[0., 2 * np.pi]] * x)
 
-#         optimizer = CMA(mean=initial_angles, sigma=sigma, n_max_resampling=n_max_resampling, lr_adapt=lr_adapt, population_size=population_size, bounds=bds_f(self.p))
+        optimizer = CMA(mean=initial_angles, sigma=sigma, n_max_resampling=n_max_resampling, lr_adapt=lr_adapt, population_size=population_size, bounds=bds(self.p))
 
 
-#         if track_energy:
-#             self.track_cost = True
+        if track_energy:
+            self.track_cost = True
 
-#         t_start = time.time()
+        t_start = time.time()
         
-#         opt_iter = 0
+        opt_iter = 0
+        best_value, best_angles = np.inf, None
 
-#         for _ in range(generations):
-#             solutions = []
-#             for _ in range(optimizer.population_size):
-#                 x = optimizer.ask()
-#                 value = self.expectation(x)
-#                 solutions.append((x, value))
-#                 opt_iter+=1
-#             optimizer.tell(solutions)
+        for _ in range(generations):
+            solutions = []
+            for _ in range(optimizer.population_size):
+                x = optimizer.ask()
+                value = self.expectation(x)
+                solutions.append((x, value))
+                if value < best_value:
+                    best_value, best_angles = value, np.asarray(x).copy()
+                opt_iter+=1
+            optimizer.tell(solutions)
 
-#             if optimizer.should_stop():
-#                 break
-
-
-#         t_end = time.time()
-
+            if optimizer.should_stop():
+                break
 
 
-#         self.opt_angles = x
-#         self.exe_time = float(t_end - t_start)
-#         self.opt_iter = opt_iter
-#         self.q_energy = value
-#         self.q_error = self.q_energy - self.min
-#         self.f_state = self.qaoa_ansatz(self.opt_angles)
-#         self.olap = self.overlap(self.f_state)
+        t_end = time.time()
 
-#         self.log = (f' Depth: {self.p} \n Error: {self.q_error} \n QAOA_Eg: {self.q_energy} \n'
-#                     f' Exact_Eg: {self.min} \n Overlap: {self.olap} \n Exe_time: {self.exe_time} \n'
-#                     f' Iternations: {self.opt_iter}')
-#         if track_energy:
-#             self.track_cost = False
 
-#     def run_de(self, track_energy=False):
-#         """Runs the QAOA using the differential evolution optimization method
-#             The maximum number of function evaluations (with no polishing) is: (maxiter + 1) * popsize * (N - N_equal)
-#         Returns:
-#             None
-#         """      
-#         if track_energy:
-#             self.track_cost = True
 
-#         # Define the objective function for optimization
-#         def objective_function(x):
-#             return self.expectation(x)
+        self.opt_angles = best_angles
+        self.exe_time = float(t_end - t_start)
+        self.opt_iter = opt_iter
+        self.q_energy = best_value
+        self.q_error = self.q_energy - self.min
+        self.f_state = self.qaoa_ansatz(self.opt_angles)
+        self.olap = self.overlap(self.f_state)
 
-#         # Define bounds for the variables
-#         bds = [(0.0, 2 * np.pi)] * self.p + [(0.0, 2 * np.pi)] * self.p
-
-#         t_start = time.time()
-
-#         # Run differential evolution optimization
-#         result = differential_evolution(objective_function,bounds=bds, updating='immediate', polish=False, atol=1e-10)
-
-#         t_end = time.time()
-
-#         # Extract optimization results
-#         self.opt_angles = result.x
-#         self.exe_time = float(t_end - t_start)
-#         self.opt_iter = result.nfev  # Number of function evaluations
-#         self.q_energy = result.fun
-#         self.q_error = self.q_energy - self.min
-#         self.f_state = self.qaoa_ansatz(self.opt_angles)
-#         self.olap = self.overlap(self.f_state)
-
-#         self.log = (f' Depth: {self.p} \n Error: {self.q_error} \n QAOA_Eg: {self.q_energy} \n'
-#                     f' Exact_Eg: {self.min} \n Overlap: {self.olap} \n Exe_time: {self.exe_time} \n'
-#                     f' Iterations: {self.opt_iter}')
-        
-#         if track_energy:
-#             self.track_cost = False
+        self.log = (f' Depth: {self.p} \n Error: {self.q_error} \n QAOA_Eg: {self.q_energy} \n'
+                    f' Exact_Eg: {self.min} \n Overlap: {self.olap} \n Exe_time: {self.exe_time} \n'
+                    f' Iternations: {self.opt_iter}')
+        if track_energy:
+            self.track_cost = False

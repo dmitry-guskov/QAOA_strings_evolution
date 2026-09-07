@@ -1,3 +1,9 @@
+"""Dense small-system locality helpers.
+
+Legacy angle naming is retained: beta_angle controls COST, gamma_angle MIXER.
+Arrays are chronological. Evolution is U† O U with U[l]=exp(-i gamma[l] B)
+exp(-i beta[l] H). Qiskit binary lists put qubit zero at the rightmost factor.
+"""
 import numpy as np
 import itertools
 import qiskit.quantum_info as qi
@@ -73,7 +79,7 @@ def construct_QAOA_operator_term(H1, H2, number_of_layers=1, beta_angle=None, ga
         mixer += get_circuit_operators(x_string, np.zeros(nqubits))
         x_string[i] = 0
 
-    for p in range(number_of_layers):
+    for p in reversed(range(number_of_layers)):
         # Making unitary for Hamiltonian exp
         exp_H = expm(1j * H2 * beta_angle[p])
         # Making mixer X
@@ -83,7 +89,7 @@ def construct_QAOA_operator_term(H1, H2, number_of_layers=1, beta_angle=None, ga
 
     return ans
 
-def generate_random_QAOA_operator(nqubits, locality=2, number_of_terms=10, number_of_layers=1, beta_angle=None, gamma_angle=None):
+def generate_random_QAOA_operator(nqubits, locality=2, number_of_terms=10, number_of_layers=1, beta_angle=None, gamma_angle=None, *, seed=None):
     """
     Generate a random QAOA operator, i.e. makes a random Hamiltonian with the set number of terms and their locality.
 
@@ -98,34 +104,39 @@ def generate_random_QAOA_operator(nqubits, locality=2, number_of_terms=10, numbe
     Returns:
         np.ndarray: Random QAOA operator.
     """
+    if (not isinstance(nqubits, (int, np.integer)) or nqubits < 1
+            or not isinstance(locality, (int, np.integer)) or locality < 0
+            or not isinstance(number_of_terms, (int, np.integer)) or number_of_terms < 0):
+        raise ValueError("Expected positive qubit count and nonnegative integer locality/term count.")
+    rng = np.random.default_rng(seed)
+    # Legacy API: beta is the cost angle, gamma is the mixer angle.
     # Define angles for mixers
     if beta_angle is None:
-        beta_angle = np.random.rand(number_of_layers) * np.pi / 3
+        beta_angle = rng.random(number_of_layers) * np.pi / 3
     cos_angle_beta = np.ones(number_of_layers) * np.cos(beta_angle)
     sin_angle_beta = np.ones(number_of_layers) * np.sin(beta_angle)
 
     if gamma_angle is None:
-        gamma_angle = np.random.rand(number_of_layers) * np.pi / 6
+        gamma_angle = rng.random(number_of_layers) * np.pi / 6
     cos_angle_gamma = np.ones(number_of_layers) * np.cos(gamma_angle)
     sin_angle_gamma = np.ones(number_of_layers) * np.sin(gamma_angle)
 
     # Making Hamiltonian
     locality = min(locality, nqubits)
-    number_of_terms = min(number_of_terms, nqubits)
+    number_of_terms = min(number_of_terms, len(get_binary_strings(nqubits, locality)))
 
     # Hamiltonian ZjZk
-    rng = np.random.default_rng()
     Zs = get_binary_strings(nqubits, locality)
     pickedZ = rng.choice(Zs, number_of_terms, replace=False)
 
     # Making Hamiltonian
-    H = 0
+    H = np.zeros((2**nqubits, 2**nqubits), dtype=complex)
     for i in range(len(pickedZ)):
         H += get_circuit_operators(np.zeros(nqubits), pickedZ[i])
 
     ans = H
 
-    for p in range(number_of_layers):
+    for p in reversed(range(number_of_layers)):
         # Making unitary for Hamiltonian exp
         identity = get_circuit_operators(np.zeros(nqubits), np.zeros(nqubits))
 
@@ -133,7 +144,7 @@ def generate_random_QAOA_operator(nqubits, locality=2, number_of_terms=10, numbe
 
         for i in range(len(pickedZ)):
             unitary_z = unitary_z @ (cos_angle_beta[p] * identity
-                                     - 1j * sin_angle_beta[p] * get_circuit_operators(np.zeros(nqubits), pickedZ[i]))
+                                     + 1j * sin_angle_beta[p] * get_circuit_operators(np.zeros(nqubits), pickedZ[i]))
 
         # Making mixer X
         x_string = np.zeros(nqubits)
@@ -143,10 +154,10 @@ def generate_random_QAOA_operator(nqubits, locality=2, number_of_terms=10, numbe
         for i in range(nqubits):
             x_string[i] = 1
             unitary_x = unitary_x @ (cos_angle_gamma[p] * identity
-                                     - 1j * sin_angle_gamma[p] * get_circuit_operators(x_string, np.zeros(nqubits)))
+                                     + 1j * sin_angle_gamma[p] * get_circuit_operators(x_string, np.zeros(nqubits)))
             x_string[i] = 0
 
-        ans = unitary_z @ unitary_x @ ans @ unitary_x.conjugate() @ unitary_z.conjugate()
+        ans = unitary_z @ unitary_x @ ans @ unitary_x.conj().T @ unitary_z.conj().T
 
     return ans
 
@@ -161,6 +172,11 @@ def count_solutions_XI(Operator, tol=1e-10):
     Returns:
         tuple: X/I solutions, max locality, average locality, and the number of solutions.
     """
+    Operator = np.asarray(Operator)
+    if (Operator.ndim != 2 or Operator.shape[0] != Operator.shape[1]
+            or len(Operator) < 1 or len(Operator) & (len(Operator)-1)
+            or not np.isfinite(Operator).all() or not np.isfinite(tol) or tol < 0):
+        raise ValueError("Expected a finite square power-of-two operator and nonnegative tolerance.")
     nqubits = int(np.log2(len(Operator)))
     x_strings = get_binary_strings(nqubits)
     z_zeros = np.zeros(nqubits)
@@ -171,7 +187,7 @@ def count_solutions_XI(Operator, tol=1e-10):
 
     for i in x_strings:
         x_mat = get_circuit_operators(i, z_zeros)
-        coef = np.around(1 / (1 << nqubits) * np.real(np.trace(x_mat @ Operator)), 6)
+        coef = np.trace(x_mat @ Operator) / (1 << nqubits)
         if np.abs(coef) > tol:
             count_x = np.sum(i)
             ans.append((str(i), coef))
@@ -180,12 +196,9 @@ def count_solutions_XI(Operator, tol=1e-10):
             avg_locality += count_x
 
     len_ans = len(ans)
-    if len_ans == 0:
-        len_ans = 1
+    return ans, max_locality, avg_locality / len_ans if len_ans else 0.0, len_ans
 
-    return ans, max_locality, avg_locality / len_ans, len_ans
-
-def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, gamma_angle=None):
+def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, gamma_angle=None, *, seed=None):
     """
     Generate a grid of locality vs. number of terms for QAOA operators.
 
@@ -200,6 +213,7 @@ def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, 
     Returns:
         np.ndarray: Locality vs. number of terms grid.
     """
+    rng = np.random.default_rng(seed)
     grid = np.zeros((max_loc, max_terms, 3))
     for i in range(1, max_loc + 1):
         for j in range(1, max_terms + 1):
@@ -207,7 +221,7 @@ def make_grid(nqubits, max_loc, max_terms, number_of_layers=1, beta_angle=None, 
                 continue
             ans = generate_random_QAOA_operator(nqubits=nqubits, locality=i, number_of_terms=j,
                                                 number_of_layers=number_of_layers, beta_angle=beta_angle,
-                                                gamma_angle=gamma_angle)
+                                                gamma_angle=gamma_angle, seed=rng)
             ans, max_loc, avg_loc, len_ans = count_solutions_XI(ans, 1e-10)
             grid[i - 1][j - 1][0] = max_loc
             grid[i - 1][j - 1][1] = avg_loc
@@ -255,39 +269,28 @@ def plot_grid(grid, layer=-1, mode=2):
     fig.tight_layout()
     plt.show()
 
-def make_H_maxCUT(G, full_matrix=False):
+def make_H_maxCUT(G, full_matrix=True):
+    """Return sum w_ij Zi Zj (minimization convention).
+
+    The historical default remains a dense matrix; full_matrix=False returns
+    its diagonal. NetworkX node insertion order defines qubit indices, with
+    qubit zero rightmost as in the other Qiskit locality helpers.
     """
-    Create the Hamiltonian for the max-cut problem.
-
-    Args:
-        G (nx.Graph or np.ndarray): Input graph or adjacency matrix.
-        full_matrix (bool, optional): Whether to return a full matrix. Defaults to False.
-
-    Returns:
-        np.ndarray: Hamiltonian matrix.
-    """
-    if type(G) == nx.classes.graph.Graph:
-        n = len(G.nodes())
-        adj_mat = np.zeros([n, n])
-        for i in range(n):
-            for j in range(n):
-                temp = G.get_edge_data(i, j, default=0)
-                if temp != 0:
-                    adj_mat[i, j] = 1
-    else:
-        adj_mat = G
-    n = (len(adj_mat))
-
-    H = np.zeros((2 ** n, 2 ** n), dtype=complex)
-    zeros = np.zeros(n)
-
+    a = nx.to_numpy_array(G, nodelist=list(G.nodes()), weight='weight') if isinstance(G, nx.Graph) else np.asarray(G)
+    if (a.ndim != 2 or a.shape[0] != a.shape[1] or len(a) == 0
+            or not np.isrealobj(a) or not np.isfinite(a).all()
+            or not np.array_equal(a, a.T) or np.any(np.diag(a))):
+        raise ValueError('Expected a finite real symmetric adjacency with no self loops.')
+    n = len(a)
+    indices = np.arange(2**n)
+    diagonal = np.zeros(2**n)
     for i in range(n):
-        for j in range(i + 1, n):
-            if adj_mat[i][j] != 0:
-                buf = np.zeros(n)
-                buf[i] = buf[j] = 1
-                H += adj_mat[i][j] * get_circuit_operators(zeros, buf)
-    return H
+        for j in range(i+1, n):
+            if a[i, j]:
+                parity = ((indices >> i) ^ (indices >> j)) & 1
+                diagonal += a[i, j]*(1-2*parity)
+    return np.diag(diagonal) if full_matrix else diagonal
+
 
 PAULIS = {'I': np.eye(2),
           'X': np.array([[0, 1], [1, 0]]),
@@ -358,7 +361,7 @@ def construct_QAOA_operator_from_H(H, number_of_layers=1, beta_angle=None, gamma
         mixer += get_circuit_operators(x_string, np.zeros(nqubits))
         x_string[i] = 0
 
-    for p in range(number_of_layers):
+    for p in reversed(range(number_of_layers)):
         # Making unitary for Hamiltonian exp
         exp_H = expm(1j * H * beta_angle[p])
         # Making mixer X
