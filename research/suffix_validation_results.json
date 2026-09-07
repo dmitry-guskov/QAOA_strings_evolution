@@ -1,0 +1,38 @@
+{
+  "seed": 20260906,
+  "validation": "floating-point numerical checks; theorem has separate analytic proof",
+  "point_and_box_cases": 17880,
+  "weighted_affine_box_cases": 2520,
+  "clifford_cases": 12288,
+  "max_residuals": {
+    "amplitude_bound": 7.771561172376096e-16,
+    "gradient_bound": 1.3322676295501878e-15,
+    "exact_side_amplitude": 6.661699538672011e-16,
+    "exact_side_gradient": 2.6645352591003757e-15,
+    "imaginary": 5.828670879282072e-16
+  },
+  "unweighted_point_statistics": {
+    "cycle6": {
+      "point_cases": 5120,
+      "reachable_cases": 880,
+      "mean_exact_amplitude": 0.18830782060327877,
+      "mean_finner_bound": 0.23419754462844763,
+      "mean_localmax_bound": 0.30578976160058513
+    },
+    "K33": {
+      "point_cases": 5120,
+      "reachable_cases": 1170,
+      "mean_exact_amplitude": 0.1785889868560067,
+      "mean_finner_bound": 0.23478615093675267,
+      "mean_localmax_bound": 0.33386150884532156
+    },
+    "prism6": {
+      "point_cases": 5120,
+      "reachable_cases": 1705,
+      "mean_exact_amplitude": 0.14348238887966014,
+      "mean_finner_bound": 0.2178290772110337,
+      "mean_localmax_bound": 0.31781639753310553
+    }
+  },
+  "elapsed_seconds": 27.905530214309692
+}

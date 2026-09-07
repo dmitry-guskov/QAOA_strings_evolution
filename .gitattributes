@@ -1,0 +1,6 @@
+# Machine-generated evidence remains available but is collapsed in GitHub diffs.
+research/**/*.json linguist-generated=true
+research/**/*.png linguist-generated=true
+research/**/*.pdf linguist-generated=true
+research/reproduction/** linguist-vendored=true
+research/diagnostics/**/audited_certified_evolution_v1.py linguist-vendored=true

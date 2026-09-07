@@ -1,0 +1,36 @@
+{
+  "source_sha256": "4f4c4a82778583f7d9e0f4dfffd1141d6f116d2f512047c3e801a6c474ffb0b6",
+  "seed": 789321,
+  "full_dense_cases": 54,
+  "box_dense_cases": 270,
+  "max_residuals": {
+    "full_energy": 9.43689570931383e-16,
+    "full_gradient": 7.105427357601002e-15,
+    "box_energy": 1.3322676295501878e-15,
+    "box_gradient": 1.1324274851176597e-14,
+    "surrogate_gradient_finite_difference": 3.70301456165123e-10
+  },
+  "duplicate_edge_counterexample_public_helper": {
+    "n": 2,
+    "x": 2,
+    "z": 3,
+    "edges": [
+      [
+        0,
+        1,
+        1.0
+      ],
+      [
+        0,
+        1,
+        1.0
+      ]
+    ],
+    "gamma": 0.2,
+    "returned_amplitude_bound": 0.507247356400526,
+    "exact_amplitude": 0.7173560908995228,
+    "returned_derivative_bound": 1.9705841547101826,
+    "exact_derivative": 2.7868268373886615
+  },
+  "elapsed_seconds": 38.90894103050232
+}

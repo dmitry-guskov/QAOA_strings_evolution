@@ -1,0 +1,11 @@
+{
+  "original_package_file_sha256": {
+    "sha256.json": "53ff3ae410ab063e2f7f2e02c7af31b7cde65d2fc9602d6624317f87d5226271",
+    "results.json": "e25306874ba4e9b41c4b1f064d6a0dda8961f269f852439a28683e9688a4f868",
+    "audited_certified_evolution_v1.py": "4f4c4a82778583f7d9e0f4dfffd1141d6f116d2f512047c3e801a6c474ffb0b6",
+    "experiment.py": "65a817d24ec11e319036790dc4ed522a7b6543664401a1cdc39e2884c2f833f2",
+    "RESULTS.md": "bde7f8beab0f8434640c37f6c12dbe2328da84e3cde85f0216e0358d961f7ee5",
+    "inputs.json": "d543ac85d968bbfc2e38f2eef1b7098e69b6e9ab15f7e34244490d85970a5d54"
+  },
+  "integration": "Script paths made relative to their own files; original numeric results preserved until explicit rerun. Archived v1 is reproduction evidence, not the supported public API."
+}
